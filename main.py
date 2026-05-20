@@ -1,136 +1,90 @@
-from game import TicTacToe5x5
-from agents import RandomAgent, NoisyHeuristicAgent, AlphaBetaAgent
 import time
+import csv
+import json
 import random
+from train import train_agent
+from evaluate import evaluate_policy
+from game import TicTacToe5x5
+from agents import RandomAgent, NoisyHeuristicAgent, AlphaBetaAgent, QLearningAgent
 
-def play_single_game(agent_x, agent_o, visualize=False): 
-    board = TicTacToe5x5()
-    current_player = 'X'
+def write_to_csv_file(filename, rows):
+    if not rows:
+        return
+    headers = rows[0].keys()
+    with open(filename, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(rows)
+
+def run_RL():
+    csv_rows = []
+
+    print("Starting Training for Config 1...")
     start_time = time.time()
-    move_cnt = 0
-    nodes_expanded = 0
-
-    while not board.is_terminal(): 
-        if current_player == 'X':
-            move = agent_x.get_move(board, 'X', 'O')
-            if hasattr(agent_x, 'nodes_expanded'):
-                nodes_expanded += agent_x.nodes_expanded
-        else: 
-            move = agent_o.get_move(board, 'O', 'X')
-            if hasattr(agent_o, 'nodes_expanded'):
-                nodes_expanded += agent_o.nodes_expanded
-
-        board = board.make_move(move, current_player)
-        move_cnt += 1
-
-        if visualize == True:
-            print(f"Player {current_player} plays {move}")
-            board.print_board()
-        
-        if current_player == 'X':
-            current_player = 'O' 
-        else: 
-            current_player = 'X'
-        
+    baseline_return = train_agent("Baseline (Config 1)")
     end_time = time.time()
-    total_time = end_time-start_time
+    baseline_training_time = end_time-start_time
+    print(f"Config 1 trained in: {baseline_training_time:.2f} seconds")
 
-    if board.check_win('X'):
-        winner = 'X'
-    elif board.check_win('O'):
-        winner = 'O'
-    else: 
-        winner = 'Draw'
+    temp_agent1 = QLearningAgent()
+    temp_agent1.load_model("q_table_baseline.pkl")
+    baseline_q_size = len(temp_agent1.q_table)
+    print(f"Baseline Q-table Size: {baseline_q_size} entries")
 
-    if visualize:
-        print(f"Final result: {winner}")
-        print(f"Computation Time: {total_time}")
-        print(f"Total Moves: {move_cnt}")
+    with open("baseline_returns.json", "w") as f:
+        json.dump(baseline_return, f)
 
-    return winner, total_time, nodes_expanded, move_cnt
+    for opponent_type in ["Random", "Noisy", "AlphaBeta"]:
+        total_games = 20 if opponent_type == "AlphaBeta" else 100
+        metrics = evaluate_policy("q_table_baseline.pkl", opponent_type, total_games)
 
-def run_all_experiments():
-    agent_R = RandomAgent()
-    agent_N = NoisyHeuristicAgent()
-    agent_AB = AlphaBetaAgent()
+        row = {
+            "Config": "Baseline (Config 1)",
+            "Opponent": opponent_type,
+            "Wins": metrics["wins"],
+            "Losses": metrics["losses"],
+            "Draws": metrics["draws"],
+            "AvgReturn": metrics["avg_return"],
+            "AvgGameLength": metrics["avg_game_length"],
+            "QTableSize": baseline_q_size,
+            "TrainingTime": baseline_training_time
+        }
+        csv_rows.append(row)
 
-    # Experiment against Noisy agent
-    opponent = agent_N
-    winners = []
-    times = []
-    moves_list = []
-    nodes_list = []
+    print("\nStarting Training for Config 2...")
+    start_time = time.time()
+    improved_return = train_agent("Improved (Config 2)")
+    end_time = time.time()
+    improved_training_time = end_time-start_time
+    print(f"Config 2 trained in: {improved_training_time:.2f} seconds")
 
-    print("--- Starting 20 Games vs Noisy Agent ---")
-    for i in range(20):
-        random.seed(i)
+    temp_agent2 = QLearningAgent()
+    temp_agent2.load_model("q_table_improved.pkl")
+    improved_q_size = len(temp_agent2.q_table)
+    print(f"Improved Q-table Size: {improved_q_size} entries")
 
-        if random.choice([True, False]):
-            agent_x = agent_AB
-            agent_o = opponent
-            ab_role = 'X'
-        else:
-            agent_x = opponent
-            agent_o = agent_AB
-            ab_role = 'O'
+    with open("improved_returns.json", "w") as f:
+        json.dump(improved_return, f)
 
-        winner, time_taken, nodes, moves = play_single_game(agent_x, agent_o, visualize=False)
+    for opponent_type in ["Random", "Noisy", "AlphaBeta"]:
+        total_games = 20 if opponent_type == "AlphaBeta" else 100
+        metrics = evaluate_policy("q_table_improved.pkl", opponent_type, total_games)
 
-        if winner == ab_role:
-            winners.append('Alpha-Beta')
-        elif winner == 'Draw':
-            winners.append('Draw')
-        else: 
-            winners.append('Opponent')
-        times.append(time_taken)
-        moves_list.append(moves)
-        nodes_list.append(nodes)
+        row = {
+            "Config": "Improved (Config 2)",
+            "Opponent": opponent_type,
+            "Wins": metrics["wins"],
+            "Losses": metrics["losses"],
+            "Draws": metrics["draws"],
+            "AvgReturn": metrics["avg_return"],
+            "AvgGameLength": metrics["avg_game_length"],
+            "QTableSize": improved_q_size,
+            "TrainingTime": improved_training_time
+        }
+        csv_rows.append(row)
     
-    print("--- Final Experiment Summary(vs. Noisy) ---")
-    print(f"Player X (Alpha-Beta) Wins: {winners.count('Alpha-Beta')}")
-    print(f"Player O (the opponent) Wins: {winners.count('Opponent')}")
-    print(f"Draws: {winners.count('Draw')}")
-    print(f"Average Moves: {sum(moves_list)/len(moves_list)}")
-    print(f"Average Nodes Expanded: {sum(nodes_list)/len(nodes_list)}")
-
-    # Experiment against Random agent
-    opponent = agent_R
-    winners = []
-    times = []
-    moves_list = []
-    nodes_list = []
-
-    print("\n--- Starting 20 Games vs Random Agent ---")
-    for i in range(20):
-        random.seed(i)
-
-        if random.choice([True, False]):
-            agent_x = agent_AB
-            agent_o = opponent
-            ab_role = 'X'
-        else:
-            agent_x = opponent
-            agent_o = agent_AB
-            ab_role = 'O'
-
-        winner, time_taken, nodes, moves = play_single_game(agent_x, agent_o, visualize=False)
-
-        if winner == ab_role:
-            winners.append('Alpha-Beta')
-        elif winner == 'Draw':
-            winners.append('Draw')
-        else: 
-            winners.append('Opponent')
-        times.append(time_taken)
-        moves_list.append(moves)
-        nodes_list.append(nodes)
-
-    print("--- Final Experiment Summary(vs. Random) ---")
-    print(f"Player X (Alpha-Beta) Wins: {winners.count('Alpha-Beta')}")
-    print(f"Player O (the opponent) Wins: {winners.count('Opponent')}")
-    print(f"Draws: {winners.count('Draw')}")
-    print(f"Average Moves: {sum(moves_list)/len(moves_list)}")
-    print(f"Average Nodes Expanded: {sum(nodes_list)/len(nodes_list)}")
+    write_to_csv_file("results.csv", csv_rows)
+    print("\nresults.csv generated. All Done")    
 
 if __name__ == "__main__":
-    run_all_experiments()
+    run_RL()
