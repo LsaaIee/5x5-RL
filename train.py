@@ -1,0 +1,69 @@
+import random
+from agents import QLearningAgent, RandomAgent, NoisyHeuristicAgent
+from game import RL_TicTacToe_Env
+
+def train_agent(configuration_type):
+    random.seed(15)
+    num_epis = 50000
+    alpha = 0.1
+    gamma = 0.95
+    epsilon_start = 1.0
+    epsilon_end = 0.05
+
+    q_agent = QLearningAgent(alpha, gamma)
+    episode_returns = []
+
+    for episode in range(num_epis):
+        current_epsilon = calculate_decay(episode, epsilon_start, epsilon_end, num_epis)
+
+        if configuration_type == "Baseline (Config 1)":
+            opponent = RandomAgent()
+        elif configuration_type == "Improved (Config 2)": 
+            if random.random() < 0.5:
+                opponent = RandomAgent()
+            else: 
+                opponent = NoisyHeuristicAgent()
+        
+        env = RL_TicTacToe_Env(opponent, QAgentMark='X')
+
+        current_state = env.reset()
+        total_episode_reward = 0
+        done = False
+
+        while done == False:
+            legal_actions = env.get_legal_actions()
+            action = q_agent.select_action(current_state, legal_actions, current_epsilon)
+
+            next_state, reward, done = env.step(action)
+
+            if configuration_type == "Improved (Config 2)":
+                reward = apply_custom_reward_shaping(reward, done)
+            
+            next_legal_actions = env.get_legal_actions()
+
+            q_agent.update(current_state, action, reward, next_state, next_legal_actions, done)
+
+            current_state = next_state
+            total_episode_reward = total_episode_reward+reward
+
+        episode_returns.append(total_episode_reward)
+
+    if configuration_type == "Baseline (Config 1)":
+        q_agent.save_model("q_table_baseline.pkl")
+    else:
+        q_agent.save_model("q_table_improved.pkl")
+
+    return episode_returns
+
+def calculate_decay(episode, epsilon_start, epsilon_end, total_episodes):
+    progress = episode/total_episodes
+    epsilon = epsilon_start-(progress*(epsilon_start-epsilon_end))
+
+    return max(epsilon, epsilon_end)
+
+def apply_custom_reward_shaping(base_reward, done):
+    if done == True:
+        return base_reward
+    else:
+        step_penalty = -0.01
+        return base_reward+step_penalty
