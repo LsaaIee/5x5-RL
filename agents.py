@@ -232,4 +232,3 @@ class QLearningAgent:
     def load_model(self, filepath):
         with open(filepath, 'rb') as f:
             self.q_table = pickle.load(f)
-

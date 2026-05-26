@@ -56,7 +56,7 @@ def evaluate_policy(model_path, opponent_type, total_games):
         total_return = total_return+game_reward
         total_moves = total_moves + (25-env.game.empty_cells)
     
-    print(f"\n--- Evaluation vs {opponent_type} Summary ---")
+    print(f"\n--- Evaluation: vs {opponent_type} Summary ---")
     print(f"Wins: {wins} / Losses: {losses} / Draws: {draws}")
 
     results_data = {
