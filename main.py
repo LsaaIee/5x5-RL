@@ -4,8 +4,39 @@ import json
 import random
 from train import train_agent
 from evaluate import evaluate_policy
-from game import TicTacToe5x5
-from agents import RandomAgent, NoisyHeuristicAgent, AlphaBetaAgent, QLearningAgent
+from game import RL_TicTacToe_Env
+from agents import QLearningAgent, RandomAgent, NoisyHeuristicAgent, AlphaBetaAgent
+
+def visualize_game(env, q_agent, agent_mark='X'):
+    """Runs a single evaluation game and prints progress to the console."""
+    print("\n--- STARTING VISUALIZATION GAME ---")
+    state = env.reset()
+    print("Initial Board State:")
+    env.print_board() 
+    
+    done = False
+    while not done:
+        legal_moves = env.game.get_legal_moves()
+        
+        action = q_agent.select_action(state, legal_moves, epsilon=0.0)
+        q_value = q_agent.get_q_value(state, action)
+        
+        print(f"\nPlayer {agent_mark} (Q-Agent) plays {action}")
+        print(f"--> Expected Q-value for this move: {q_value:.3f}")
+        
+        next_state, reward, done = env.step(action)
+        
+        print("Board state after turn:")
+        env.print_board() 
+        state = next_state
+        
+    print("--- GAME OVER ---")
+    if reward == 1.0:
+        print("Result: Q-Agent Wins!")
+    elif reward == -1.0:
+        print("Result: Opponent Wins.")
+    else:
+        print("Result: Draw.")
 
 def write_to_csv_file(filename, rows):
     if not rows:
@@ -16,7 +47,7 @@ def write_to_csv_file(filename, rows):
         writer.writeheader()
         writer.writerows(rows)
 
-def run_RL():
+def run_RL(visualize=False):
     csv_rows = []
 
     print("Starting Training for Config 1...")
@@ -86,5 +117,28 @@ def run_RL():
     write_to_csv_file("results.csv", csv_rows)
     print("\nresults.csv generated. All Done")    
 
+    if visualize == True: 
+        for opponent_type in ["Random", "Noisy", "AlphaBeta"]:
+            total_games = 20 if opponent_type == "AlphaBeta" else 100
+            
+            if opponent_type == "Random":
+                vis_opponent = RandomAgent()
+            elif opponent_type == "Noisy":
+                vis_opponent = NoisyHeuristicAgent() 
+            elif opponent_type == "AlphaBeta":
+                vis_opponent = AlphaBetaAgent() 
+                
+            vis_env = RL_TicTacToe_Env(vis_opponent, 'X')
+            
+            print(f"\n\n>>> EVALUATING AGAINST: {opponent_type.upper()} <<<")
+            
+            for i in range(total_games):
+                print(f"\n=== Game {i + 1} of {total_games} vs {opponent_type} ===")
+                
+                if opponent_type == "Random" and i == 0:
+                    visualize_game(vis_env, temp_agent2, agent_mark='X')
+                else:
+                    visualize_game(vis_env, temp_agent2, agent_mark='X')
+
 if __name__ == "__main__":
-    run_RL()
+    run_RL(visualize=False)
