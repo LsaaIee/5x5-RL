@@ -8,7 +8,6 @@ from game import RL_TicTacToe_Env
 from agents import QLearningAgent, RandomAgent, NoisyHeuristicAgent, AlphaBetaAgent
 
 def visualize_game(env, q_agent, agent_mark='X'):
-    """Runs a single evaluation game and prints progress to the console."""
     print("\n--- STARTING VISUALIZATION GAME ---")
     state = env.reset()
     print("Initial Board State:")
@@ -134,11 +133,7 @@ def run_RL(visualize=False):
             
             for i in range(total_games):
                 print(f"\n=== Game {i + 1} of {total_games} vs {opponent_type} ===")
-                
-                if opponent_type == "Random" and i == 0:
-                    visualize_game(vis_env, temp_agent2, agent_mark='X')
-                else:
-                    visualize_game(vis_env, temp_agent2, agent_mark='X')
+                visualize_game(vis_env, temp_agent2, agent_mark='X')
 
 if __name__ == "__main__":
     run_RL(visualize=False)

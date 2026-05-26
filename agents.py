@@ -179,12 +179,14 @@ class QLearningAgent:
         self.gamma = gamma
     
     def get_q_value(self, state, action):
-        if (state, action) in self.q_table:
+        "sparse q-table: if state-action pair not found from q-table, init as 0.0"
+        if (state, action) in self.q_table: 
             return self.q_table[(state, action)]
         else: 
             return 0.0
         
     def select_action(self, state, legal_actions, epsilon):
+        "select the next move among equally best actions"
         randnum = random.random()
 
         if randnum < epsilon:
@@ -222,6 +224,7 @@ class QLearningAgent:
             
             target = reward + self.gamma * max_next_q
         
+        # Q-value update 
         new_q = current_q + self.alpha * (target-current_q)
         self.q_table[(state, action)] = new_q
 

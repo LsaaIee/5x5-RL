@@ -75,6 +75,7 @@ class TicTacToe5x5:
         print()
 
 class RL_TicTacToe_Env:
+    "Absorb two-players adversarial game into one-player MDP"
     def __init__(self, OpponentAgent, QAgentMark):
         self.game = TicTacToe5x5()
         self.opponent = OpponentAgent
@@ -82,6 +83,7 @@ class RL_TicTacToe_Env:
         self.opp_mark = 'X' if QAgentMark == 'O' else 'O'
 
     def get_state(self):
+        "2D board --> 1D to create key for Q-table dict"
         board_1D = []
         for row in self.game.board:
             for cell in row:
@@ -114,6 +116,7 @@ class RL_TicTacToe_Env:
         if self.game.is_terminal() == True:
             return self.get_state(), 0.0, True
 
+        # force opponent to make the move --> absorb opponent as env
         opp_action = self.opponent.get_move(self.game, self.opp_mark, self.q_mark)
         r_opp, c_opp = opp_action
         self.game.board[r_opp][c_opp] = self.opp_mark

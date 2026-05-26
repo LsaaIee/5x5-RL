@@ -24,7 +24,8 @@ def train_agent(configuration_type):
             else: 
                 opponent = NoisyHeuristicAgent()
         
-        env = RL_TicTacToe_Env(opponent, QAgentMark='X')
+        mark = random.choice(['X', 'O'])
+        env = RL_TicTacToe_Env(opponent, QAgentMark=mark)
 
         current_state = env.reset()
         total_episode_reward = 0
