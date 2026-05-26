@@ -125,3 +125,6 @@ class RL_TicTacToe_Env:
             return self.get_state(), 0.0, True
         
         return self.get_state(), 0.0, False
+    
+    def print_board(self):
+        self.game.print_board()
