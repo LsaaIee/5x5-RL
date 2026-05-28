@@ -1,4 +1,6 @@
 import random
+import time
+import json
 from agents import QLearningAgent, RandomAgent, NoisyHeuristicAgent
 from game import RL_TicTacToe_Env
 
@@ -68,3 +70,24 @@ def apply_custom_reward_shaping(base_reward, done):
     else:
         step_penalty = -0.01
         return base_reward+step_penalty
+
+if __name__ == "__main__":
+    print("Starting Training for Config 1 (Baseline)...")
+    start_time = time.time()
+    baseline_returns = train_agent("Baseline (Config 1)")
+    baseline_time = time.time() - start_time
+    print(f"Config 1 trained in: {baseline_time:.2f} seconds")
+
+    with open("baseline_returns.json", "w") as f:
+        json.dump(baseline_returns, f)
+
+    print("\nStarting Training for Config 2 (Improved)...")
+    start_time = time.time()
+    improved_returns = train_agent("Improved (Config 2)")
+    improved_time = time.time() - start_time
+    print(f"Config 2 trained in: {improved_time:.2f} seconds")
+
+    with open("improved_returns.json", "w") as f:
+        json.dump(improved_returns, f)
+        
+    print("\nTraining complete! 'q_table_baseline.pkl' and 'q_table_improved.pkl' have been saved.")
