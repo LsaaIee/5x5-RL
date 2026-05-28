@@ -6,7 +6,7 @@ from game import RL_TicTacToe_Env
 
 def train_agent(configuration_type):
     random.seed(15)
-    num_epis = 50000
+    num_epis = 500000
     alpha = 0.1
     gamma = 0.95
     epsilon_start = 1.0
